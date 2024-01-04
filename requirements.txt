@@ -1,0 +1,16 @@
+numpy==1.26.2
+regex==2023.10.3
+nltk==3.8.1
+pandas==2.1.4
+singleton
+praw
+urllib3==1.26.18
+xmltodict==0.13.0
+
+r-collections ??? ==0.16
+
+datetime ???
+string ???
+
+
+pip install -r requirements.txt
