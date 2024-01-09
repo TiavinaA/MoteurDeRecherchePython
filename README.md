@@ -11,4 +11,5 @@ Enfin le dossier V3 comprend le projet final.
 Chargez ou créez un corpus.
 Vous pourrez effectuer des recherches en uilisant des filtres et des mots clés.
 
+## Les tests unitaires sont contenus dans les fichiers test....py
 
