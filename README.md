@@ -7,7 +7,7 @@ Le dossier V1 comprend la base du projet avec la création des classes, des corp
 Le dossier V2 comprend la création du moteur de recherche avec la gestion du vocabulaire d'un corpus et les matrices de concordance.
 Enfin le dossier V3 comprend le projet final.
 
-## Pour ouvrir le moteur de recherche, ouvrez le fichier notebook : app.ipynb
+## Pour ouvrir le moteur de recherche, ouvrez le fichier notebook : app.ipynb dans le dossier V3
 Chargez ou créez un corpus.
 Vous pourrez effectuer des recherches en uilisant des filtres et des mots clés.
 
