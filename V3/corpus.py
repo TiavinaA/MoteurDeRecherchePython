@@ -116,10 +116,15 @@ class Corpus :
 
 
     # Calcule de l'occurence des mots dans le corpus  : 
-    def calcOccurrence(self):
+    def calcOccurrence(self, filtre=None):
+        if ((filtre is not None) and (len(filtre) > 0)):
+            textes = filtre
+        else:    
+            textes = self.id2doc.values()
         vocab = {}
-        for x in self.id2doc.values():
-            y = self.nettoyer_texte(x.texte)
+        for x in textes:
+            texte = str(x.titre) + ' ' + str(x.texte)
+            y = self.nettoyer_texte(texte)
             for mot in y:
                 if mot in vocab:
                     vocab[mot]+=1
@@ -129,10 +134,15 @@ class Corpus :
 
 
     # Calcule de la fréquence des mots par texte : 
-    def calcFreq(self):
+    def calcFreq(self, filtre=None):
         vocFreq = {}
-        for x in self.id2doc.values():
-            y = self.nettoyer_texte(x.texte)
+        if ((filtre is not None) and (len(filtre) > 0)):
+            textes = filtre
+        else:    
+            textes = self.id2doc.values()
+        for x in textes:
+            texte = str(x.titre) + ' ' + str(x.texte)
+            y = self.nettoyer_texte(texte)
             ens = set(y)
             for mot in ens:
                 if mot in vocFreq:
@@ -173,10 +183,10 @@ class Corpus :
 
 
     # Crétion du dictionnaire sur lequel le moteur de recherche va reposer : 
-    def createVocab(self):
+    def createVocab(self, filtre=None):
         # On tri les dictionnaires d'occurence et de fréquence :
-        vocab = self.calcOccurrence()
-        vocFreq = self.calcFreq()
+        vocab = self.calcOccurrence(filtre)
+        vocFreq = self.calcFreq(filtre)
         realVocab = {}
         i = 0
         for x in sorted(vocab.keys()): # On ajoute des informations spécifiques à chaque mots dans un dictionnaire : 
@@ -190,17 +200,24 @@ class Corpus :
     
 
     # Création de la matrice TFIDF : 
-    def createTFIDF (self):
+    def createTFIDF (self, filtre=None):
         doc_cleaned = []
-        for x in self.id2doc.values(): # On récupère et nettoie chaque texte du corpus :  
-            y = self.nettoyer_texte(x.texte)
+        if ((filtre is not None) and (len(filtre) > 0)):
+            textes = filtre
+        else:    
+            textes = self.id2doc.values()
+        for x in textes: # On récupère et nettoie chaque texte du corpus : 
+            texte = str(x.titre) + ' ' + str(x.texte) 
+            y = self.nettoyer_texte(texte)
             doc_cleaned.append(y)
         vectorizer = TfidfVectorizer(lowercase=False, tokenizer=lambda x: x)
         X = vectorizer.fit_transform(doc_cleaned)
         # On vérifie si les termes sont dans le bon ordre :
+        """
         feature_names = vectorizer.get_feature_names_out()
         for i in range(10):
             print(f"Identifiant : {i}, Fonctionnalité : {feature_names[i]}")
+        """
         # print(type(X))
         # print(X.shape)
         # print(type(X.toarray()))
@@ -208,28 +225,94 @@ class Corpus :
     
     
     # Gestion de la requête de l'utilisateur : 
-    def motsCles (self, request, vocabulary, tfidf):
+    def motsCles (self, request, vocabulary, tfidf, filtre=None, filDico=None, filMat=None):
         # On nettoie la requête pour pouvoir l'analyser : 
         word = self.nettoyer_texte(request)
-        # on récupère les identifiants des mots-clés s'ils existent dnas le dictionnaire : 
+        # on récupère les identifiants des mots-clés s'ils existent dans le dictionnaire : 
         list_founds = []
+        # Si un filtre à été passé en paramètre, on récupère la matrice tfidf et le dictionnaire qui lui sont associés : 
+        if ((filtre is not None) and (len(filtre) > 0)):
+            textes = filtre
+            textes.insert(0, 'vide')
+            vocabulary = filDico
+            tfidf = filMat
+
+        else:    
+            textes = self.id2doc
         for x in vocabulary.keys():
             for y in word:
                 if (x == y):
                     list_founds.append(vocabulary[x]['id'])
+
         if list_founds: # On continue si la liste est non-vide : 
             df = pandas.DataFrame() # Création d'un dataframe qui ne contient que les colonnes des mots-clés et récupérés depuis la matrice tfidf : 
             num_lines = tfidf.shape[0]
             df['id'] = range(num_lines)
+            # print(df['id'])
             for x in list_founds:
                 df[str(x)] = tfidf[:, x].toarray().ravel()
             df['Score'] = df.loc[:, df.columns != 'id'].sum(axis=1) # on calcul dans un champs 'Score' la somme des valeurs de chaque ligne : 
             # print(df['Score'])
             df_trie = df.sort_values(by='Score', ascending=False)
             # print(df_trie)
-            for i in range(0, 10): # On affiche les 10 résultats ayant le score le plus élevé : 
-                print(self.id2doc[(df_trie['id'].iloc[i])+1])
-                print((df_trie['id'].iloc[i])+1)
 
+            for i in range(0, len(df_trie)): # On affiche les 10 résultats ayant le score le plus élevé :
+                if (df_trie['Score'].iloc[i] > 0):
+                    print(textes[(df_trie['id'].iloc[i])+1])
+                    # print((df_trie['id'].iloc[i])+1)
+                    # print((df_trie['Score'].iloc[i])+1)
             return df_trie
+        else:
+            print('Aucun texte correspondant à votre requête a été trouvé !')
+
+    # Fonction qui permet de rechercher un texte en fonction de son/ses auteur(s) : 
+    def rechercheAuteur(self, request, filtre=None):
+        # On nettoie la requête pour pouvoir l'analyser :
+        authors = self.nettoyer_texte(request)
+        list_founds = set()
+        # On vérifie si un filtre à été appliqué : 
+        if ((filtre is not None) and (len(filtre) > 0)):
+            textes = filtre
+        else:    
+            textes = self.id2doc.values()
+        for x in textes:
+            auteurs = x.auteur
+            if (x.type == 'Arxiv'): # Si le texte est de type 'Arxiv', on vérifie s'il possède des co-auteurs : 
+                coAuteurs = str(x.coAuteur)
+                if (coAuteurs != '0'):
+                    coAuteurs = ' '.join(str(auteur) for auteur in x.coAuteur)
+                auteurs += ' ' + coAuteurs
+            auteurs = self.nettoyer_texte(auteurs) # on nettoie les noms des auteurs : 
+            for y in authors: #On vérifie si l'un des termes de la requête correspond au nom d'un des auteurs du texte : 
+                if (y in auteurs):
+                    list_founds.add(x)
+
+        if list_founds: # Si des textes ont été trouvés, on les affiches : 
+            # for x in list_founds:
+                # print(x.texte)
+            filDico = self.createVocab(list_founds)
+            filMat = self.createTFIDF(list_founds)
+            list_founds = list(list_founds) # on transforme l'ensemble en une liste avant de la renvoyer :
+            return list_founds, filDico, filMat
+        else:
+            print('aucun texte de cet auteur n\'a été trouvé !')
+
+    # Fonction qui renvoi une liste qui ne contient que les textes Reddit ou Arxiv (en fonction de la requête de l'utilisateur) : 
+    def filtrerTypeDoc(self, type):
+        list_filtre = []
+        for x in self.id2doc.values():
+            if (x.type == type):
+                list_filtre.append(x)
+
+        filDico = self.createVocab(list_filtre)
+        filMat = self.createTFIDF(list_filtre)
+        return list_filtre, filDico, filMat # Renvoi la liste des textes qui répondent au filtre ainsi que la matrice tfidf et le dictionnaire associés
+    
+
+    # Fonction qui sert à réinitialiser un filtre : 
+    def delFiltre(self, filtre):
+        filtre = []
+        return filtre
+
+
             
