@@ -1,5 +1,9 @@
 from corpusGenerator import *
 from corpus import *
+
+#Cette page sert uniquement de brouillon et zone de test
+
+
 corpus_charge = Corpus('CorpusTest')
 # c = corpus_charge.load('V2/france.pkl')
 c = corpus_charge.load('V2/france.pkl')

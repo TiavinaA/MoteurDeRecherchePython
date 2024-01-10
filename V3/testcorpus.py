@@ -4,6 +4,7 @@ from corpus import Corpus
 import io
 from unittest.mock import patch
 import os
+import pandas as pd
 class TestCorpus(unittest.TestCase):
     def setUp(self) :
         self.corpus = Corpus("Test Corpus")
@@ -66,5 +67,20 @@ class TestCorpus(unittest.TestCase):
         for file_path in file_paths:
             if os.path.exists(file_path):
                 os.remove(file_path)
+
+    def test_concordance(self):
+        self.corpus.add(self.doc1)
+        self.corpus.add(self.doc2)
+        self.corpus.add(self.doc3)
+
+        result = self.corpus.concorde("Hello", 5)
+        # Ensure the result is a DataFrame with the expected columns
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertListEqual(result.columns.tolist(), ['contexte gauche', 'motif trouvé', 'contexte droit'])
+
+    def test_clean_text(self):
+        raw_text = "Hello World! This is a test."
+        cleaned_text = self.corpus.nettoyer_texte(raw_text)
+        self.assertEqual(cleaned_text, ["hello", "world", "test"])
 if __name__ == '__main__' :
     unittest.main()
